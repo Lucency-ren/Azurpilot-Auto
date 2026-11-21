@@ -190,8 +190,18 @@
     },
     "Enhance": {
       "ShipToEnhance": "all",
-      "Filter": null,
-      "CheckPerCategory": 5
+      "Sort": "level",
+      "Index": "all",
+      "Faction": "all",
+      "Rarity": [
+        "rare",
+        "elite",
+        "super_rare",
+        "ultra"
+      ],
+      "ExtraIndex": [
+        "enhanceable"
+      ]
     },
     "OldRetire": {
       "N": true,

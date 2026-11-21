@@ -394,8 +394,23 @@ Enhance:
   ShipToEnhance:
     value: all
     option: [all, favourite]
-  Filter:
-  CheckPerCategory: 5
+  Sort:
+    value: level
+    option: [rarity, level, total, join, intimacy, mood, stat]
+  Index:
+    value: all
+    option: [all, vanguard, main, dd, cl, ca, bb, cv, repair, ss, others]
+  Faction:
+    value: all
+    option: [all, eagle, royal, sakura, iron, dragon, sardegna, northern, iris, vichya, tulipa, pedreria, meta, tempesta, other]
+  Rarity:
+    type: multiselect
+    value: [rare, elite, super_rare, ultra]
+    option: [common, rare, elite, super_rare, ultra]
+  ExtraIndex:
+    type: multiselect
+    value: [enhanceable]
+    option: [no_limit, has_skin, can_retrofit, enhanceable, can_limit_break, not_level_max, can_awaken, can_awaken_plus, special, oath_skin, unique_augment_module, wear_skin, oathed]
 OldRetire:
   N: true
   R: true

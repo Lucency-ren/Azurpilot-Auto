@@ -1148,13 +1148,76 @@
       "all": "すべての艦船を強化する",
       "favourite": "よく使う艦船のみ強化する"
     },
-    "Filter": {
-      "name": "強化フィルタ文字列",
-      "help": "形式: \"cv > bb > ...\"\nデフォルトの強化方法を使用する場合は空白のままにしてください"
+    "Sort": {
+      "name": "Enhance.Sort.name",
+      "help": "Enhance.Sort.help",
+      "rarity": "rarity",
+      "level": "level",
+      "total": "total",
+      "join": "join",
+      "intimacy": "intimacy",
+      "mood": "mood",
+      "stat": "stat"
     },
-    "CheckPerCategory": {
-      "name": "艦種ごとの強化チェック数",
-      "help": "各艦種ごとに最大何隻まで強化チェックしますか？\n戦闘中の艦船はスキップされ、カウントされません。\n強化素材がある艦船を優先します"
+    "Index": {
+      "name": "Enhance.Index.name",
+      "help": "Enhance.Index.help",
+      "all": "all",
+      "vanguard": "vanguard",
+      "main": "main",
+      "dd": "dd",
+      "cl": "cl",
+      "ca": "ca",
+      "bb": "bb",
+      "cv": "cv",
+      "repair": "repair",
+      "ss": "ss",
+      "others": "others"
+    },
+    "Faction": {
+      "name": "Enhance.Faction.name",
+      "help": "Enhance.Faction.help",
+      "all": "all",
+      "eagle": "eagle",
+      "royal": "royal",
+      "sakura": "sakura",
+      "iron": "iron",
+      "dragon": "dragon",
+      "sardegna": "sardegna",
+      "northern": "northern",
+      "iris": "iris",
+      "vichya": "vichya",
+      "tulipa": "tulipa",
+      "pedreria": "pedreria",
+      "meta": "meta",
+      "tempesta": "tempesta",
+      "other": "other"
+    },
+    "Rarity": {
+      "name": "Enhance.Rarity.name",
+      "help": "Enhance.Rarity.help",
+      "common": "common",
+      "rare": "rare",
+      "elite": "elite",
+      "super_rare": "super_rare",
+      "ultra": "ultra"
+    },
+    "ExtraIndex": {
+      "name": "Enhance.ExtraIndex.name",
+      "help": "Enhance.ExtraIndex.help",
+      "no_limit": "no_limit",
+      "has_skin": "has_skin",
+      "can_retrofit": "can_retrofit",
+      "enhanceable": "enhanceable",
+      "can_limit_break": "can_limit_break",
+      "not_level_max": "not_level_max",
+      "can_awaken": "can_awaken",
+      "can_awaken_plus": "can_awaken_plus",
+      "special": "special",
+      "oath_skin": "oath_skin",
+      "unique_augment_module": "unique_augment_module",
+      "wear_skin": "wear_skin",
+      "oathed": "oathed"
     }
   },
   "OldRetire": {

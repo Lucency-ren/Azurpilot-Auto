@@ -1148,13 +1148,76 @@
       "all": "Strengthen all ships",
       "favourite": "Only commonly used ships are strengthened"
     },
-    "Filter": {
-      "name": "Enhance filter string",
-      "help": "Format: \"cv > bb > ...\",\nLeave blank to use the default enhancement method"
+    "Sort": {
+      "name": "Sort",
+      "help": "Same as the dock filter panel sort.",
+      "rarity": "Rarity",
+      "level": "Level",
+      "total": "Total stats",
+      "join": "Acquired",
+      "intimacy": "Affection",
+      "mood": "Mood",
+      "stat": "Attribute"
     },
-    "CheckPerCategory": {
-      "name": "Number of reinforcements per category",
-      "help": "How many ships can be enhanced at most for each ship category?\nShips in combat will be skipped and not counted,\nPrioritize whether there are strengthening materials"
+    "Index": {
+      "name": "Index",
+      "help": "Same as the dock filter panel index. All does not filter by hull type.",
+      "all": "All",
+      "vanguard": "Vanguard",
+      "main": "Main fleet",
+      "dd": "Destroyer",
+      "cl": "Light cruiser",
+      "ca": "Heavy cruiser",
+      "bb": "Battleship",
+      "cv": "Aircraft carrier",
+      "repair": "Repair ship",
+      "ss": "Submarine",
+      "others": "Others"
+    },
+    "Faction": {
+      "name": "Faction",
+      "help": "Same as the dock filter panel faction.",
+      "all": "All",
+      "eagle": "Eagle Union",
+      "royal": "Royal Navy",
+      "sakura": "Sakura Empire",
+      "iron": "Iron Blood",
+      "dragon": "Eastern Radiance",
+      "sardegna": "Sardegna Empire",
+      "northern": "Northern Parliament",
+      "iris": "Iris Libre",
+      "vichya": "Vichya Dominion",
+      "tulipa": "Tulipa",
+      "pedreria": "Pedreria",
+      "meta": "META",
+      "tempesta": "Tempesta",
+      "other": "Other"
+    },
+    "Rarity": {
+      "name": "Rarity",
+      "help": "Same as the dock filter panel rarity. Multiple choices allowed.\nOrdinary ships are skipped unless Common is selected.",
+      "common": "Common",
+      "rare": "Rare",
+      "elite": "Elite",
+      "super_rare": "Super Rare",
+      "ultra": "Ultra Rare"
+    },
+    "ExtraIndex": {
+      "name": "Extra index",
+      "help": "Same as the dock filter panel extra index. Multiple choices allowed.\nDefaults to Enhanceable.",
+      "no_limit": "No limit",
+      "has_skin": "Has skin",
+      "can_retrofit": "Can retrofit",
+      "enhanceable": "Enhanceable",
+      "can_limit_break": "Can limit break",
+      "not_level_max": "Not max level",
+      "can_awaken": "Can awaken",
+      "can_awaken_plus": "Can awaken II",
+      "special": "Special",
+      "oath_skin": "Oath skin",
+      "unique_augment_module": "Unique augment",
+      "wear_skin": "Skin equipped",
+      "oathed": "Oathed"
     }
   },
   "OldRetire": {

@@ -392,8 +392,13 @@ export function Shell({
       // page=tool 的任务（半自动点击/性能测试/活动剧情…）在老 UI 里走
       // alas_daemon_overview——配置表单 + 调度器启停 + 日志，不是开发者工具页。
       // 它们必须带上任务名进 /tool/:name/:task，否则只能看到调试按钮。
-      const toolGroup = menu.find(g => g.page === 'tool' && g.tasks.some(t => t.key === key))
-      if (toolGroup) {
+      //
+      // 判定放宽到「菜单里 tool 分组列出的任务」：page 字段偶尔会因旧缓存/旧
+      // menu 快照缺失，只认 page==='tool' 会把这些任务错送进 /config（配置页
+      // 没有调度器启停栏，用户会以为「启动按钮没了」）。
+      const inToolGroup = menu.some(g => g.page === 'tool' && g.tasks.some(t => t.key === key))
+        || menu.some(g => g.key === 'Tool' && g.tasks.some(t => t.key === key))
+      if (inToolGroup) {
         navigate(`/tool/${encodeURIComponent(instanceName)}/${encodeURIComponent(key)}`)
         return
       }

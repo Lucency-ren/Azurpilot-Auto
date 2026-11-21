@@ -18,9 +18,115 @@ export type Arg = {
 }
 export type Group = { group: string; title: string; args: Arg[] }
 
+/**
+ * 多选控件：折叠成一个小框，点开才展开全部选项。
+ *
+ * 老 UI（module/webui/widgets.py:1054 put_arg_multiselect）是竖排复选框全铺开，
+ * 「附加索引」有 13 个选项，一行就被撑成半屏高（长卿 2026-11-21：
+ * 「你别给全部直接摆出来呀…折叠到那个小框里面点一下全部再展开」）。
+ *
+ * 值语义：按 option 原顺序回传字符串数组，后端 parse_pin_value
+ * （module/webui/utils.py:867-873）用 `str(option)` 反查原始类型，
+ * 委托商店那种数字 option（3 → "3" → 3）不会退化成字符串。
+ */
+function MultiSelect({ arg, onChange }: { arg: Arg; onChange: (v: any) => void }) {
+  const options = arg.option || []
+  const [open, setOpen] = useState(false)
+  const boxRef = useRef<HTMLDivElement>(null)
+  const current = new Set(
+    (Array.isArray(arg.value) ? arg.value : arg.value === null || arg.value === undefined ? [] : [arg.value])
+      .map(String),
+  )
+  // 点空白处 / Esc 收起（弹层不常驻，避免挡住下面的参数）
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const selectedLabels = options.filter(o => current.has(String(o.value))).map(o => o.label)
+  const summary = selectedLabels.length ? selectedLabels.join('、') : '未选择'
+  return (
+    <div ref={boxRef} style={{ position: 'relative', display: 'flex', alignItems: 'stretch', gap: 4 }}>
+      {/* 外形与普通 select 一致（长卿 2026-11-21：像「阵营」那种下拉一样适应宽度） */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="form-control config-multiselect-trigger"
+        title={summary}
+        onClick={() => setOpen(v => !v)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen(v => !v)
+          }
+        }}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          alignItems: 'center',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {summary}
+        </span>
+        <span aria-hidden="true" style={{ flex: '0 0 auto', opacity: 0.65 }}>▾</span>
+      </div>
+      {/* 多选专用按钮：展开 ☑ 列表（单选仍是普通 select，不出现这个按钮） */}
+      <button
+        type="button"
+        className="config-multiselect-btn"
+        title={open ? '收起选项' : '多选'}
+        aria-label={open ? '收起选项' : '多选'}
+        aria-expanded={open}
+        onClick={() => setOpen(v => !v)}
+      >
+        ☑
+      </button>
+      {open && (
+        <div className="config-multiselect-panel">
+          {options.map(o => {
+            const v = String(o.value)
+            return (
+              <label key={v} className="config-multiselect-option" title={o.label}>
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={current.has(v)}
+                  onChange={e => {
+                    const next = options
+                      .map(x => String(x.value))
+                      .filter(x => (x === v ? e.target.checked : current.has(x)))
+                    onChange(next)
+                  }}
+                />
+                <span>{o.label}</span>
+              </label>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** 控件：与 widgets.py 的 put_arg_* 分支一一对应。 */
-function ArgControl({ arg, onChange }: { arg: Arg; onChange: (v: any) => void }) {
-  if (arg.type === 'select' && arg.option.length) {
+function ArgControl({ arg, onChange }: { arg: Arg; onChange: (v: any) => void }) {  if (arg.type === 'select' && arg.option.length) {
     return (
       <select className="form-control" value={arg.value ?? ''} onChange={e => onChange(e.target.value)}>
         {arg.option.map(o => (
@@ -98,6 +204,12 @@ function ArgControl({ arg, onChange }: { arg: Arg; onChange: (v: any) => void })
       />
     )
   }
+  // 多选（船坞筛选的稀有度/附加索引、委托商店优先级等）：折叠成一个小框，
+  // 点一下才展开全部选项（长卿 2026-11-21：「你别给全部直接摆出来呀…
+  // 折叠到那个小框里面点一下全部再展开」）。实现见 MultiSelect。
+  if (arg.type === 'multiselect') {
+    return <MultiSelect arg={arg} onChange={onChange} />
+  }
   return (
     <input className="form-control" type="text" value={arg.value ?? ''} onChange={e => onChange(e.target.value)} />
   )
@@ -123,7 +235,9 @@ function ArgControl({ arg, onChange }: { arg: Arg; onChange: (v: any) => void })
  * 右列只有 208px。
  */
 function scopeIdFor(kind: string, name: string): string {
-  // 只有 textarea 沿用老 UI 的拼写错误，其余控件保持一致
+  // 只有 textarea 沿用老 UI 的拼写错误，其余控件保持一致。
+  // multiselect 也走正确前缀：index.tsx 保存失败时按
+  // `[id^="pywebio-scope-arg_container-"]` 找容器加红框，拼错就标不上。
   const prefix = kind === 'textarea' ? 'arg_contianer' : 'arg_container'
   return `pywebio-scope-${prefix}-${kind}-${name}`
 }
@@ -154,6 +268,7 @@ export function ArgBlock({
     // 'arg_container-datetime-{name}'）。必须区分出来，否则 NextRun 这类
     // 时间控件会和普通输入框共用一个 id 前缀，也不利于按类型做样式。
     : arg.type === 'datetime' ? 'datetime'
+    : arg.type === 'multiselect' ? 'multiselect'
     : 'input'
   return (
     <div id={scopeIdFor(kind, arg.name)}>

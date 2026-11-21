@@ -1,4 +1,4 @@
-"""自动搜索战斗管理器。
+﻿"""自动搜索战斗管理器。
 
 管理通关模式（快进模式）下的自动搜索战斗流程。
 
@@ -63,12 +63,17 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
     auto_search_oil_limit_triggered = False
     auto_search_coin_limit_triggered = False
     # 自律寻敌卡死自救：地图被渲染成小窗、图标显示运行中但舰队不动。
-    # 三个条件同时满足才动手：画面像素连续不变（冻结）、业务无进展、超过计时。
-    auto_search_stuck_timeout = 18       # 连“停止自律”都认不出来：18 秒就唤醒
-    auto_search_frozen_timeout = 30      # 显示运行中却画面冻结：30 秒兜底
-    auto_search_stuck_max_attempt = 3
+    # 画面冻结只是其中一种表现，另一种是画面照常动（地图动画、特效）但舰队不走，
+    # 所以额外用「自律寻敌按钮长时间不处于运行态」做独立判据。
+    auto_search_idle_timeout = 15        # 按钮一直不是「停止自律」：15 秒就点一下
+    auto_search_no_progress_timeout = 85  # 硬兜底：业务毫无进展，画面动/显示运行中也动手
+    auto_search_stuck_timeout = 18       # 画面冻结且认不出“停止自律”：18 秒点地图中央
+    auto_search_frozen_timeout = 30      # 画面冻结但显示运行中：30 秒兜底
+    auto_search_stuck_max_attempt = 4
     _auto_search_stuck_timer = None
     _auto_search_frozen_timer = None
+    _auto_search_idle_timer = None
+    _auto_search_no_progress_timer = None
 
     def _auto_search_stuck_check(self):
         """
@@ -85,6 +90,11 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
           1. 点击地图中央；
           2. 点一下「自律寻敌」把它的状态翻回来（关掉再开）。
 
+        判据有两种，任一命中即动手：
+          - 自律寻敌按钮连续 idle_timeout 秒都不在运行态（画面动不动都算
+            异常，因为舰队在动的时候按钮一定是「停止自律」）；
+          - 画面像素连续不变（冻结）且超过计时。
+
         Returns:
             bool: If a recovery action was performed.
         """
@@ -96,40 +106,91 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
         if slow is None:
             slow = Timer(self.auto_search_frozen_timeout).start()
             self._auto_search_frozen_timer = slow
+        idle = self._auto_search_idle_timer
+        if idle is None:
+            idle = Timer(self.auto_search_idle_timeout).start()
+            self._auto_search_idle_timer = idle
+        no_progress = self._auto_search_no_progress_timer
+        if no_progress is None:
+            no_progress = Timer(self.auto_search_no_progress_timeout).start()
+            self._auto_search_no_progress_timer = no_progress
 
-        # 画面还在动就说明客户端活着：加载条、特效、地图动画都算进展，
-        # 正常打关时绝不会因为“久等”而插手。
+        # 硬兜底：不管画面动不动、按钮认成什么状态，业务 75 秒没推进就动手。
+        # 只被真正的业务进展（handler 命中、进入战斗）重置，地图动画和
+        # “看起来在运行”都不续期，避免图标认错时一直干等到 195 秒。
+        if no_progress.reached():
+            return self._auto_search_wake_up(
+                f'{self.auto_search_no_progress_timeout}s 毫无进展，强制唤醒',
+                AUTO_SEARCH_MAP_OPTION_ON,
+            )
+
+        running = self.is_auto_search_running()
+        if running:
+            idle.reset()
+            self._auto_search_progress(running=True)
+        elif idle.reached():
+            # 画面可能一直在动（地图动画、特效），但按钮不是运行态就说明
+            # 客户端没在推进，点一次自律寻敌让它重新下发移动指令。
+            return self._auto_search_wake_up(
+                f'{self.auto_search_idle_timeout}s 未处于自律寻敌运行态，点击自律寻敌唤醒',
+                AUTO_SEARCH_MAP_OPTION_ON,
+            )
+
+        # 画面还在动就不做冻结判定：加载条、特效、地图动画都算客户端还活着。
+        # 注意这里只续期冻结计时器，不能动「未运行」计时器，否则地图动画会把
+        # 舰队不动的情况一直续命下去。
         signature = self._auto_search_frame_signature()
         if signature is not None:
             if signature != self.__dict__.get('_auto_search_frame_sig'):
                 self.__dict__['_auto_search_frame_sig'] = signature
-                self._auto_search_progress()
+                fast.reset()
+                slow.reset()
                 return False
 
-        # 画面确实冻住了才动手：认不出“停止自律”18s，还认得出来 30s。
-        fast_ready = fast.reached() and not self.is_auto_search_running()
+        # 画面确实冻住了：认不出“停止自律”18s，还认得出来 30s。
+        fast_ready = fast.reached() and not running
         slow_ready = slow.reached()
         if not fast_ready and not slow_ready:
             return False
 
+        if fast_ready and self.__dict__.get('_auto_search_stuck_attempt', 0) == 0:
+            return self._auto_search_wake_up(
+                f'{self.auto_search_stuck_timeout}s 无进展且认不出自律寻敌，点击地图中央唤醒',
+                AUTO_SEARCH_MAP_CENTER,
+            )
+        timeout = self.auto_search_stuck_timeout if fast_ready else self.auto_search_frozen_timeout
+        return self._auto_search_wake_up(
+            f'{timeout}s 无进展，切换自律寻敌状态',
+            AUTO_SEARCH_MAP_OPTION_ON,
+        )
+
+    def _auto_search_wake_up(self, message, button):
+        """
+        Perform one wake-up click and count the attempts.
+
+        Args:
+            message: Log message describing why we act.
+            button: Button to click.
+
+        Returns:
+            bool: Always True, the caller treats it as “handled this tick”.
+
+        Raises:
+            GameStuckError: Wake-up attempts exceeded, hand over to recovery.
+        """
         attempt = self.__dict__.get('_auto_search_stuck_attempt', 0) + 1
         self._auto_search_stuck_attempt = attempt
-        fast.reset()
-        slow.reset()
+        for timer in (self._auto_search_stuck_timer, self._auto_search_frozen_timer,
+                      self._auto_search_idle_timer, self._auto_search_no_progress_timer):
+            if timer is not None:
+                timer.reset()
 
         if attempt > self.auto_search_stuck_max_attempt:
             logger.warning('[自动搜索-移动] 多次唤醒无效，交给恢复流程')
             raise GameStuckError('自动搜索画面无响应')
 
-        if fast_ready and attempt == 1:
-            logger.warning(f'[自动搜索-移动] {self.auto_search_stuck_timeout}s 无进展且认不出自律寻敌，点击地图中央唤醒')
-            self.device.click(AUTO_SEARCH_MAP_CENTER, control_check=False)
-        else:
-            # 画面仍显示运行中时点地图中央实测无效，直接翻自律寻敌开关；
-            # 单次点击即可：运行中会被点成关闭，脚本随后自己会再开。
-            timeout = self.auto_search_stuck_timeout if fast_ready else self.auto_search_frozen_timeout
-            logger.warning(f'[自动搜索-移动] {timeout}s 无进展（第 {attempt} 次唤醒），切换自律寻敌状态')
-            self.device.click(AUTO_SEARCH_MAP_OPTION_ON, control_check=False)
+        logger.warning(f'[自动搜索-移动] {message}（第 {attempt} 次唤醒）')
+        self.device.click(button, control_check=False)
         self.device.sleep(1)
         return True
 
@@ -161,8 +222,12 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
             self.__dict__.pop('_auto_search_stuck_attempt', None)
             if self._auto_search_frozen_timer is not None:
                 self._auto_search_frozen_timer.reset()
+            if self._auto_search_no_progress_timer is not None:
+                self._auto_search_no_progress_timer.reset()
         if self._auto_search_stuck_timer is not None:
             self._auto_search_stuck_timer.reset()
+        if self._auto_search_idle_timer is not None:
+            self._auto_search_idle_timer.reset()
 
     def _handle_auto_search_menu_missing(self):
         """

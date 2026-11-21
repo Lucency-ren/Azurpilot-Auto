@@ -45,6 +45,11 @@ class Enhancement(Dock):
     Attributes:
         _retire_amount (property): 根据退役模式配置计算的退役数量上限。
     """
+    # 图鉴里有大量同名同立绘的重复舰船，滑动后画面可能完全一样。
+    # 这里允许连续这么多次「画面没变」才判定滑到列表末尾，避免一遇到
+    # 重复舰船就结束本轮强化。
+    enhance_swipe_max_same = 6
+
     @property
     def _retire_amount(self):
         if self.config.Retirement_RetireMode == 'one_click_retire':
@@ -91,15 +96,28 @@ class Enhancement(Dock):
         sort = getattr(self.config, 'Enhance_Sort', None) or 'level'
         index = getattr(self.config, 'Enhance_Index', None) or 'all'
         faction = getattr(self.config, 'Enhance_Faction', None) or 'all'
-        rarity = getattr(self.config, 'Enhance_Rarity', None) or 'all'
-        extra = getattr(self.config, 'Enhance_ExtraIndex', None) or 'no_limit'
-        if isinstance(extra, list):
-            if 'no_limit' in extra:
-                extra = 'no_limit'
-            elif len(extra) == 1:
-                extra = extra[0]
-        if isinstance(rarity, list) and len(rarity) == 1:
+        # 稀有度是五个独立开关（RarityCommon/Rare/Elite/SuperRare/Ultra），
+        # 按 普通→海上传奇 的顺序拼回船坞筛选要的列表。
+        rarity = [
+            rarity_key
+            for rarity_key, config_key in (
+                ('common', 'Enhance_RarityCommon'),
+                ('rare', 'Enhance_RarityRare'),
+                ('elite', 'Enhance_RarityElite'),
+                ('super_rare', 'Enhance_RaritySuperRare'),
+                ('ultra', 'Enhance_RarityUltra'),
+            )
+            if getattr(self.config, config_key, False)
+        ]
+        if not rarity:
+            logger.warning('[退役-强化] 五个稀有度开关都没开，本轮按「全部」筛选')
+            rarity = 'all'
+        elif len(rarity) == 1:
             rarity = rarity[0]
+        # 附加索引是单选下拉，直接用配置值。
+        extra = getattr(self.config, 'Enhance_ExtraIndex', None) or 'enhanceable'
+        if isinstance(extra, list):
+            extra = extra[0] if extra else 'enhanceable'
 
         # 船坞筛选默认只「点亮」需要的选项、不「关闭」多余的选项，
         # 这里必须先把多余的选项取消勾选，筛选才会真正生效。
@@ -313,7 +331,7 @@ class Enhancement(Dock):
                 self.device.click(cv)
                 continue
 
-    def _enhance_choose(self, ship_count, skip_first_screenshot=True):
+    def _enhance_choose(self, ship_count, skip_first_screenshot=True, stay=False, max_enhance=None):
         """
         Refactor the implementation.
         Divided the enhancement process into
@@ -329,23 +347,37 @@ class Enhancement(Dock):
         Args:
             ship_count (int): ship_count, must be
             non-zero positive integer
+            stay (bool): 强化成功后留在强化页继续处理当前舰船，
+            当前舰船强化不动时自动向左滑动切到下一艘
+            max_enhance (int): 本次调用允许的最大强化次数
 
         Returns:
-            True if able to enhance otherwise False
-            Always paired with current ship_count
+            tuple(bool, int, int): (是否成功过, 剩余 ship_count, 强化次数)
         """
         need_to_skip: bool = False
+        enhanced: int = 0
+        navbar_retry: int = 0
+        # 「按推荐」只点一次：材料栏加载需要时间，加载期间没看到材料
+        # 不代表点击失败，等这个计时器到点才补点一次，避免每艘船都点两下
+        recommend_timer = Timer(6)
 
         def state_enhance_check():
             # Check the base case, switch to ready if enhancement can continue
-            nonlocal need_to_skip
+            nonlocal need_to_skip, navbar_retry
             need_to_skip = False
             if ship_count <= 0:
                 logger.info(
                     '[退役-强化] 已达到最大检查次数，退出当前分类')
                 return "state_enhance_exit"
             if not self.equip_side_navbar_ensure(bottom=4):
+                # 停留在强化页时导航栏偶发识别不到，但状态不变不会累计
+                # 振荡计数，需要单独的连续失败上限避免死等
+                navbar_retry += 1
+                if navbar_retry > 20:
+                    logger.warning('[退役-强化] 强化页侧边导航连续 20 次未识别，退出当前分类')
+                    return "state_enhance_exit"
                 return "state_enhance_check"
+            navbar_retry = 0
 
             self.wait_until_appear(ENHANCE_RECOMMEND, offset=(
                 5, 5), skip_first_screenshot=True)
@@ -357,6 +389,7 @@ class Enhancement(Dock):
             # 累积的点击会触发网格防连击检测导致强化被误判失败
             if self.appear_then_click(ENHANCE_RECOMMEND, offset=(5, 5), interval=2):
                 logger.info('按推荐设置强化材料')
+                recommend_timer.reset()
                 return "state_enhance_recommend"
 
             return "state_enhance_ready"
@@ -381,8 +414,12 @@ class Enhancement(Dock):
                 logger.info('未找到强化材料')
                 logger.info('[退役-强化] 强化失败，滑动到下一艘舰船（如可行）')
                 return "state_enhance_fail"
+            elif recommend_timer.reached():
+                # 等了 6 秒材料栏还是空的，说明那一下推荐没生效，补点一次
+                logger.info('[退役-强化] 推荐材料 6 秒未出现，重新点击推荐')
+                return "state_enhance_ready"
 
-            return "state_enhance_ready"
+            return "state_enhance_recommend"
 
         def state_enhance_attempt():
             # Wait until ENHANCE_CONFIRM appears
@@ -418,7 +455,7 @@ class Enhancement(Dock):
                 return "state_enhance_confirm"
 
             # Try to swipe to next
-            if self.equip_view_next(check_button=ENHANCE_RECOMMEND):
+            if self.equip_view_next(check_button=ENHANCE_RECOMMEND, max_same=self.enhance_swipe_max_same):
                 if not need_to_skip:
                     nonlocal ship_count
                     ship_count -= 1
@@ -434,8 +471,22 @@ class Enhancement(Dock):
         def state_enhance_success():
             # 成功强化一艘即清空点击记录，正常连强多艘时点击集中在右下角同一
             # 网格，若跨轮累积会触发网格防连击检测，把正常流程误判为强化失败
+            nonlocal enhanced, ship_count
             self.device.click_record_clear()
-            return True
+            enhanced += 1
+            # 成功一次就是真实进展，清空振荡计数，避免连强多艘被计成死循环
+            state_list.clear()
+            logger.info(f'[退役-强化] 累计强化 {enhanced} 次')
+            if not stay:
+                return True
+            if max_enhance is not None and enhanced >= max_enhance:
+                logger.info('[退役-强化] 达到本轮强化上限，结束')
+                return True
+            if ship_count <= 0:
+                return True
+            # 留在强化页继续强化当前舰船；强化不动时由 state_enhance_fail
+            # 向左滑动切到下一艘（滑动失败才退出本轮）
+            return "state_enhance_check"
 
         def state_enhance_exit():
             return False
@@ -490,16 +541,20 @@ class Enhancement(Dock):
                 raise ScriptError(f'未知的状态函数: {state}')
             state = state_functions[state]()
 
-        return state, ship_count
+        return bool(state), ship_count, enhanced
 
-    def enhance_ships(self, favourite=None):
+    def enhance_ships(self, favourite=None, limit=None):
         """
-        逐艘强化：每次都点筛选结果里的第一艘舰船，强化完成后返回列表，
-        再点新的第一个，直到无可强化舰船或达到数量上限。
+        逐个强化：进入筛选结果里的第一艘舰船后留在强化页，把这艘强化到
+        不能强化为止，再向左滑动切到下一艘。
+
+        判定无法强化时（无材料 / 战斗中 / 已达强化上限）由
+        state_enhance_fail 直接滑动到下一艘；滑不动说明没有下一艘可强化
+        舰船，本轮结束并退回船坞列表。
 
         筛选条件来自配置里的五个维度（排序/索引/阵营/稀有度/附加索引），
-        因此刚强化完仍可继续强化的舰船会留在第一位继续被强化，
-        直到它不再满足「可强化」为止。
+        只在进入时设置一次：船坞筛选是常驻状态，每强化一艘就重设一遍会
+        反复点同一批按钮（「全部」/「前排先锋」识别摇摆），很快撞上点击保护。
 
         Pages:
             in: page_dock
@@ -515,39 +570,34 @@ class Enhancement(Dock):
             favourite = self.config.Enhance_ShipToEnhance == 'favourite'
 
         logger.hr('逐个强化')
-        total = 0
-        limit = self._retire_amount
+        # 每轮强化艘数上限：0 = 一直强化到没有可强化舰船为止
+        # limit 由调用方覆盖（半自动强化任务用自己的 Count）
+        if limit is None:
+            count = int(getattr(self.config, 'Enhance_Count', 0) or 0)
+            limit = count if count > 0 else max(int(self._retire_amount), 1)
+        else:
+            limit = max(int(limit), 1)
+        logger.info(f'[退役-强化] 本轮上限 {limit} 艘')
 
-        # 筛选只在进入时做一次：船坞筛选是常驻状态，每强化一艘就重设一遍筛选
-        # 会反复点同一批按钮（「全部」/「前排先锋」识别摇摆），很快撞上点击保护。
-        entered = self._enhance_enter(favourite=favourite)
+        if not self._enhance_enter(favourite=favourite):
+            logger.info('[退役-强化] 船坞中已无可强化舰船')
+            self._enhance_quit()
+            return 0
 
-        while total < limit:
-            if not entered:
-                logger.info('[退役-强化] 船坞中已无可强化舰船')
-                break
-
-            # 单艘只做一轮强化，成功后回到列表重新取第一个
-            choose_result, _ = self._enhance_choose(ship_count=1)
-            self.ui_back(DOCK_CHECK)
-
-            if not choose_result:
-                # 可能是筛选被重置或真的没船了，重设一次筛选再确认
-                entered = self._enhance_enter(favourite=favourite)
-                if not entered:
-                    logger.info('[退役-强化] 无可强化舰船（已排除白船）')
-                    break
-                logger.info('[退役-强化] 首个舰船强化失败（无材料或不可强化），结束本轮强化')
-                break
-
-            total += 1
-            logger.info(f'[退役-强化] 累计强化 {total} 艘')
-            entered = True
+        result, ship_count, enhanced = self._enhance_choose(
+            ship_count=limit, stay=True, max_enhance=None
+        )
 
         self._enhance_quit()
-        return total
 
-    def _enhance_handler(self):
+        if enhanced:
+            logger.info(f'[退役-强化] 本轮共强化 {enhanced} 次')
+        else:
+            logger.info('[退役-强化] 首个舰船强化失败（无材料或不可强化），结束本轮强化')
+
+        return enhanced
+
+    def _enhance_handler(self, limit=None):
         """
         Pages:
             in: RETIRE_APPEAR
@@ -560,7 +610,7 @@ class Enhancement(Dock):
             in: DOCK_CHECK
             out: the page before retirement popup
         """
-        total = self.enhance_ships()
+        total = self.enhance_ships(limit=limit)
         _, remain, _ = OCR_DOCK_AMOUNT.ocr(self.device.image)
 
         self.dock_quit()

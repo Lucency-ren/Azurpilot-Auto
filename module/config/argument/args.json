@@ -1009,13 +1009,93 @@
           "favourite"
         ]
       },
-      "Filter": {
-        "type": "textarea",
-        "value": null
+      "Sort": {
+        "type": "select",
+        "value": "level",
+        "option": [
+          "rarity",
+          "level",
+          "total",
+          "join",
+          "intimacy",
+          "mood",
+          "stat"
+        ]
       },
-      "CheckPerCategory": {
-        "type": "input",
-        "value": 5
+      "Index": {
+        "type": "select",
+        "value": "all",
+        "option": [
+          "all",
+          "vanguard",
+          "main",
+          "dd",
+          "cl",
+          "ca",
+          "bb",
+          "cv",
+          "repair",
+          "ss",
+          "others"
+        ]
+      },
+      "Faction": {
+        "type": "select",
+        "value": "all",
+        "option": [
+          "all",
+          "eagle",
+          "royal",
+          "sakura",
+          "iron",
+          "dragon",
+          "sardegna",
+          "northern",
+          "iris",
+          "vichya",
+          "tulipa",
+          "pedreria",
+          "meta",
+          "tempesta",
+          "other"
+        ]
+      },
+      "Rarity": {
+        "type": "multiselect",
+        "value": [
+          "rare",
+          "elite",
+          "super_rare",
+          "ultra"
+        ],
+        "option": [
+          "common",
+          "rare",
+          "elite",
+          "super_rare",
+          "ultra"
+        ]
+      },
+      "ExtraIndex": {
+        "type": "multiselect",
+        "value": [
+          "enhanceable"
+        ],
+        "option": [
+          "no_limit",
+          "has_skin",
+          "can_retrofit",
+          "enhanceable",
+          "can_limit_break",
+          "not_level_max",
+          "can_awaken",
+          "can_awaken_plus",
+          "special",
+          "oath_skin",
+          "unique_augment_module",
+          "wear_skin",
+          "oathed"
+        ]
       }
     },
     "OldRetire": {

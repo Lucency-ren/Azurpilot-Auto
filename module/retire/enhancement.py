@@ -24,11 +24,9 @@ from module.ui.assets import BACK_ARROW
 
 VALID_SHIP_TYPES = ['dd', 'ss', 'cl', 'ca', 'bb', 'cv', 'repair', 'others']
 
-# 自动强化的筛选条件（白船 N 不参与强化）：
-#   稀有度 = 稀有 / 精锐 / 超稀有 / 海上传奇
-#   附加索引 = 可强化
-#   排序 = 等级（升序），索引与阵营不限
-ENHANCE_RARITY_TARGETS = ['rare', 'elite', 'super_rare', 'ultra']
+# 自动强化的筛选条件全部来自配置「强化设置」：
+#   排序 / 索引 / 阵营 / 稀有度 / 附加索引，与游戏船坞筛选面板一一对应。
+
 if server.server != 'jp':
     OCR_DOCK_AMOUNT = DigitCounter(
         DOCK_AMOUNT, letter=(255, 255, 255), threshold=192)
@@ -70,10 +68,10 @@ class Enhancement(Dock):
 
     def _enhance_enter(self, favourite=False):
         """
-        应用强化筛选条件并进入列表第一个舰船。
+        按配置的筛选条件进入列表第一个舰船。
 
-        筛选固定为：稀有度 R/SR/SSR/UR + 附加索引「可强化」，按等级升序，
-        索引/阵营不限（白船 N 被排除在稀有度之外）。
+        五个维度与游戏船坞筛选面板一一对应，全部来自配置：
+        排序 / 索引 / 阵营 / 稀有度 / 附加索引。
 
         Pages:
             in: page_dock
@@ -88,18 +86,33 @@ class Enhancement(Dock):
         if favourite:
             self.dock_favourite_set(enable=True, wait_loading=False)
 
+        # 配置里新增的五个筛选维度；首次升级前生成的配置可能还没有这些键，
+        # 取值失败时退回旧的默认筛选（等级升序 / 不限 / 可强化）。
+        sort = getattr(self.config, 'Enhance_Sort', None) or 'level'
+        index = getattr(self.config, 'Enhance_Index', None) or 'all'
+        faction = getattr(self.config, 'Enhance_Faction', None) or 'all'
+        rarity = getattr(self.config, 'Enhance_Rarity', None) or 'all'
+        extra = getattr(self.config, 'Enhance_ExtraIndex', None) or 'no_limit'
+        if isinstance(extra, list):
+            if 'no_limit' in extra:
+                extra = 'no_limit'
+            elif len(extra) == 1:
+                extra = extra[0]
+        if isinstance(rarity, list) and len(rarity) == 1:
+            rarity = rarity[0]
+
         # 船坞筛选默认只「点亮」需要的选项、不「关闭」多余的选项，
-        # 这里必须先把「全部/普通」等多余项取消勾选，稀有度才会真正只剩 R 及以上。
+        # 这里必须先把多余的选项取消勾选，筛选才会真正生效。
         setting = self.dock_filter
         need_deselect = setting.need_deselect
         setting.need_deselect = True
         try:
             self.dock_filter_set(
-                sort='level',
-                index='all',
-                faction='all',
-                rarity=list(ENHANCE_RARITY_TARGETS),
-                extra='enhanceable',
+                sort=sort,
+                index=index,
+                faction=faction,
+                rarity=rarity,
+                extra=extra,
             )
         finally:
             setting.need_deselect = need_deselect
@@ -484,7 +497,7 @@ class Enhancement(Dock):
         逐艘强化：每次都点筛选结果里的第一艘舰船，强化完成后返回列表，
         再点新的第一个，直到无可强化舰船或达到数量上限。
 
-        筛选条件见 ENHANCE_RARITY_TARGETS（R/SR/SSR/UR + 可强化，按等级升序），
+        筛选条件来自配置里的五个维度（排序/索引/阵营/稀有度/附加索引），
         因此刚强化完仍可继续强化的舰船会留在第一位继续被强化，
         直到它不再满足「可强化」为止。
 

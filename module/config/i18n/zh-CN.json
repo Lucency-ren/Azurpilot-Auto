@@ -1148,13 +1148,76 @@
       "all": "强化全部舰船",
       "favourite": "仅强化常用舰船"
     },
-    "Filter": {
-      "name": "强化过滤字符串",
-      "help": "格式: \"cv > bb > ...\"，\n留空则使用默认强化方式"
+    "Sort": {
+      "name": "排序",
+      "help": "对应船坞筛选面板的『排序』",
+      "rarity": "稀有度",
+      "level": "等级",
+      "total": "综合性能",
+      "join": "入手时间",
+      "intimacy": "好感度",
+      "mood": "心情值",
+      "stat": "属性"
     },
-    "CheckPerCategory": {
-      "name": "每分类强化数量",
-      "help": "每个舰船分类最多强化多少舰船，\n在战斗中的舰船会被跳过且不计入，\n优先判断是否有强化材料"
+    "Index": {
+      "name": "索引",
+      "help": "对应船坞筛选面板的『索引』，选『全部』即不按舰种筛选",
+      "all": "全部",
+      "vanguard": "前排先锋",
+      "main": "后排主力",
+      "dd": "驱逐",
+      "cl": "轻巡",
+      "ca": "重巡",
+      "bb": "战列",
+      "cv": "航母",
+      "repair": "维修",
+      "ss": "潜艇",
+      "others": "其他"
+    },
+    "Faction": {
+      "name": "阵营",
+      "help": "对应船坞筛选面板的『阵营』",
+      "all": "全阵营",
+      "eagle": "白鹰",
+      "royal": "皇家",
+      "sakura": "重樱",
+      "iron": "铁血",
+      "dragon": "东煌",
+      "sardegna": "撒丁帝国",
+      "northern": "北方联合",
+      "iris": "自由鸢尾",
+      "vichya": "维希教廷",
+      "tulipa": "郁金王国",
+      "pedreria": "晶环联盟",
+      "meta": "META",
+      "tempesta": "飓风",
+      "other": "其他"
+    },
+    "Rarity": {
+      "name": "稀有度",
+      "help": "对应船坞筛选面板的『稀有度』，可多选\n不勾『普通』就不会强化白皮船",
+      "common": "普通",
+      "rare": "稀有",
+      "elite": "精锐",
+      "super_rare": "超稀有",
+      "ultra": "海上传奇"
+    },
+    "ExtraIndex": {
+      "name": "附加索引",
+      "help": "对应船坞筛选面板的『附加索引』，可多选\n默认『可强化』",
+      "no_limit": "无限制",
+      "has_skin": "可换装",
+      "can_retrofit": "可改造",
+      "enhanceable": "可强化",
+      "can_limit_break": "可突破",
+      "not_level_max": "未满级",
+      "can_awaken": "可认知觉醒",
+      "can_awaken_plus": "可认知觉醒II",
+      "special": "特殊",
+      "oath_skin": "誓约换装",
+      "unique_augment_module": "专属兵装",
+      "wear_skin": "已换装",
+      "oathed": "已誓约"
     }
   },
   "OldRetire": {

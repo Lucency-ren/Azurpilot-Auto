@@ -16,6 +16,7 @@ from module.base.utils import area_offset
 from module.campaign.assets import *
 from module.campaign.campaign_event import CampaignEvent
 from module.campaign.campaign_ocr import CampaignOcr
+from module.combat_ui.assets import PAUSE, PAUSE_HolyLight
 from module.exception import CampaignEnd, CampaignNameError, ScriptEnd
 from module.logger import logger
 from module.map.assets import WITHDRAW
@@ -36,6 +37,50 @@ class ModeSwitch(Switch):
         if main.appear(WITHDRAW, offset=(30, 30)):
             logger.warning(f'模式切换: 出现撤退按钮')
             raise CampaignNameError
+
+        # 战役还没打完就被判定成战役页时（例如脚本在战斗结束的过渡里被重启），
+        # 画面上根本没有普通/困难开关，继续点只会把同一个按钮点到触发点击保护。
+        if self.is_in_battle(main):
+            logger.warning('模式切换: 画面仍在战斗中，判定战役页为误判')
+            raise CampaignNameError
+
+        return False
+
+    @staticmethod
+    def is_in_battle(main):
+        """
+        判断当前画面是否仍在战斗内（暂停按钮可见）。
+
+        优先复用 Combat.is_combat_executing()，它覆盖全部暂停按钮皮肤；
+        传入对象不具备该方法时，退化为常见皮肤的模板匹配。
+
+        Args:
+            main (ModuleBase): 模块基类实例。
+
+        Returns:
+            bool: 是否在战斗中。
+        """
+        checker = getattr(main, 'is_combat_executing', None)
+        if callable(checker):
+            try:
+                if checker():
+                    return True
+                return False
+            except Exception as e:
+                logger.warning(f'模式切换: 战斗检测异常，改用模板匹配 {e}')
+
+        image = getattr(main.device, 'image', None)
+        if image is None:
+            return False
+        for button in (PAUSE, PAUSE_HolyLight):
+            try:
+                if button.match_luma(image, offset=(10, 10)):
+                    return True
+                if button.match_template_color(image, offset=(10, 10)):
+                    return True
+            except Exception:
+                continue
+        return False
 
 
 MODE_SWITCH_1 = ModeSwitch('Mode_switch_1', offset=(30, 10))

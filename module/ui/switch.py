@@ -37,6 +37,8 @@ class Switch:
         self.set_unknown_timer = Timer(5, count=10)
         self.set_click_timer = Timer(1, count=2)
         self.wait_timeout = Timer(2, count=4)
+        # 点击上限：状态一直识别不出来时，兜底避免把同一个按钮点到触发点击保护
+        self.set_max_click = 6
 
     def add_state(self, state, check_button, click_button=None, offset=0, similarity=0.85):
         """
@@ -156,6 +158,7 @@ class Switch:
 
         changed = False
         has_unknown = False
+        click_count = 0
         unknown_timer = self.set_unknown_timer.reset()
         click_timer = self.set_click_timer.clear()
         while 1:
@@ -208,8 +211,14 @@ class Switch:
                         click_state = current
                 self.click(click_state, main=main)
                 changed = True
+                click_count += 1
                 click_timer.reset()
                 unknown_timer.reset()
+
+                if click_count >= self.set_max_click:
+                    logger.warning(f'[UI-开关] 开关 {self.name} 点击 {click_count} 次仍未到达 '
+                                   f'{state}（当前 {current}），停止重试')
+                    return changed
 
         return changed
 

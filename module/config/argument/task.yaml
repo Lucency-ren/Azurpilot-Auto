@@ -530,6 +530,9 @@ Tool:
       - EmulatorManager
     MeowfficerScore:
       - MeowfficerScore
+    SemiAutoEnhance:
+      - Scheduler
+      - SemiAutoEnhance
 Dashboard:
   page: dashboard
   tasks:

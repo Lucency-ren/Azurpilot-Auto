@@ -1009,6 +1009,14 @@
           "favourite"
         ]
       },
+      "Count": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          3000
+        ]
+      },
       "Sort": {
         "type": "select",
         "value": "level",
@@ -1060,27 +1068,29 @@
           "other"
         ]
       },
-      "Rarity": {
-        "type": "multiselect",
-        "value": [
-          "rare",
-          "elite",
-          "super_rare",
-          "ultra"
-        ],
-        "option": [
-          "common",
-          "rare",
-          "elite",
-          "super_rare",
-          "ultra"
-        ]
+      "RarityCommon": {
+        "type": "checkbox",
+        "value": false
+      },
+      "RarityRare": {
+        "type": "checkbox",
+        "value": true
+      },
+      "RarityElite": {
+        "type": "checkbox",
+        "value": true
+      },
+      "RaritySuperRare": {
+        "type": "checkbox",
+        "value": true
+      },
+      "RarityUltra": {
+        "type": "checkbox",
+        "value": true
       },
       "ExtraIndex": {
-        "type": "multiselect",
-        "value": [
-          "enhanceable"
-        ],
+        "type": "select",
+        "value": "enhanceable",
         "option": [
           "no_limit",
           "has_skin",
@@ -21490,6 +21500,77 @@
         "validate": [
           1,
           60
+        ]
+      }
+    },
+    "Storage": {
+      "Storage": {
+        "type": "storage",
+        "value": {},
+        "valuetype": "ignore",
+        "display": "disabled"
+      }
+    }
+  },
+  "SemiAutoEnhance": {
+    "Scheduler": {
+      "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "NextRun": {
+        "type": "datetime",
+        "value": "2026-01-01 00:00:00",
+        "validate": "datetime"
+      },
+      "Command": {
+        "type": "input",
+        "value": "SemiAutoEnhance",
+        "display": "hide"
+      },
+      "SuccessInterval": {
+        "type": "input",
+        "value": 0,
+        "display": "hide"
+      },
+      "FailureInterval": {
+        "type": "input",
+        "value": 120,
+        "display": "hide"
+      },
+      "ServerUpdate": {
+        "type": "input",
+        "value": "00:00",
+        "display": "hide"
+      },
+      "Sensitive": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      }
+    },
+    "SemiAutoEnhance": {
+      "Count": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          3000
         ]
       }
     },

@@ -437,6 +437,10 @@
     "MeowfficerScore": {
       "name": "指揮猫スコア",
       "help": "指揮猫の天賦を読み取り、公開攻略の基準で採点します"
+    },
+    "SemiAutoEnhance": {
+      "name": "Task.SemiAutoEnhance.name",
+      "help": "Task.SemiAutoEnhance.help"
     }
   },
   "Scheduler": {
@@ -1148,6 +1152,10 @@
       "all": "すべての艦船を強化する",
       "favourite": "よく使う艦船のみ強化する"
     },
+    "Count": {
+      "name": "Enhance.Count.name",
+      "help": "Enhance.Count.help"
+    },
     "Sort": {
       "name": "Enhance.Sort.name",
       "help": "Enhance.Sort.help",
@@ -1193,14 +1201,25 @@
       "tempesta": "tempesta",
       "other": "other"
     },
-    "Rarity": {
-      "name": "Enhance.Rarity.name",
-      "help": "Enhance.Rarity.help",
-      "common": "common",
-      "rare": "rare",
-      "elite": "elite",
-      "super_rare": "super_rare",
-      "ultra": "ultra"
+    "RarityCommon": {
+      "name": "Enhance.RarityCommon.name",
+      "help": "Enhance.RarityCommon.help"
+    },
+    "RarityRare": {
+      "name": "Enhance.RarityRare.name",
+      "help": "Enhance.RarityRare.help"
+    },
+    "RarityElite": {
+      "name": "Enhance.RarityElite.name",
+      "help": "Enhance.RarityElite.help"
+    },
+    "RaritySuperRare": {
+      "name": "Enhance.RaritySuperRare.name",
+      "help": "Enhance.RaritySuperRare.help"
+    },
+    "RarityUltra": {
+      "name": "Enhance.RarityUltra.name",
+      "help": "Enhance.RarityUltra.help"
     },
     "ExtraIndex": {
       "name": "Enhance.ExtraIndex.name",
@@ -7332,6 +7351,16 @@
     "ScanPasses": {
       "name": "最大ページ数",
       "help": "全スキャンモードでめくるリストの最大ページ数（1 ページ 12 匹）。末尾に着くと早めに終了します"
+    }
+  },
+  "SemiAutoEnhance": {
+    "_info": {
+      "name": "SemiAutoEnhance._info.name",
+      "help": "SemiAutoEnhance._info.help"
+    },
+    "Count": {
+      "name": "SemiAutoEnhance.Count.name",
+      "help": "SemiAutoEnhance.Count.help"
     }
   },
   "Storage": {

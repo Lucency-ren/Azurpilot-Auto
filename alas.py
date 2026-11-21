@@ -1995,6 +1995,10 @@ class AzurLaneAutoScript:
         from module.meowfficer.score_task import run_meowfficer_score
         run_meowfficer_score(config=self.config, device=self.device)
 
+    def semi_auto_enhance(self):
+        from module.retire.semi_auto_enhance import SemiAutoEnhance
+        SemiAutoEnhance(config=self.config, device=self.device, task="SemiAutoEnhance").run()
+
     def mind_calculator_scan(self):
         from module.retire.mind_scan import MindCalculatorScan
         MindCalculatorScan(config=self.config, device=self.device, task="MindCalculatorScan").run()

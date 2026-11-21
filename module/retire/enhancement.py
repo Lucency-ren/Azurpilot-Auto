@@ -88,13 +88,21 @@ class Enhancement(Dock):
         if favourite:
             self.dock_favourite_set(enable=True, wait_loading=False)
 
-        self.dock_filter_set(
-            sort='level',
-            index='all',
-            faction='all',
-            rarity=list(ENHANCE_RARITY_TARGETS),
-            extra='enhanceable',
-        )
+        # 船坞筛选默认只「点亮」需要的选项、不「关闭」多余的选项，
+        # 这里必须先把「全部/普通」等多余项取消勾选，稀有度才会真正只剩 R 及以上。
+        setting = self.dock_filter
+        need_deselect = setting.need_deselect
+        setting.need_deselect = True
+        try:
+            self.dock_filter_set(
+                sort='level',
+                index='all',
+                faction='all',
+                rarity=list(ENHANCE_RARITY_TARGETS),
+                extra='enhanceable',
+            )
+        finally:
+            setting.need_deselect = need_deselect
 
         if self.appear(DOCK_EMPTY, offset=(30, 30)):
             return False

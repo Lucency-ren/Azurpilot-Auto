@@ -27,6 +27,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { apiGet, instSeg } from '../../api/client'
 import { Shell } from '../../components/Shell'
+import { SchedulerBar } from '../../components/SchedulerBar'
 import { ArgBlock, type Group } from './groups'
 import { EventCalculator } from './EventCalculator'
 import { useToast } from '../../components/Toast'
@@ -113,7 +114,11 @@ export function ConfigPage() {
           多塞任何兄弟节点都会把 _groups 挤歪（实测卡片宽度塌成 33px）。
           老 UI 也没有保存按钮 —— 控件改完由 pin_on_change 自动落盘，
           这里用 600ms debounce 自动保存保持一致。 */}
-      <div id="pywebio-scope-content">
+      <div id="pywebio-scope-content" className="config-with-scheduler">
+        {/* 顶部调度器启停条：老 UI 配置页没有，但用户在配置页也要「点一下就跑」，
+            所以与工具页共用同一个 SchedulerBar（DOM id 与 alas.css 对齐）。
+            内容区因此改成纵向 flex（见 newui-scoped.css 的 .config-with-scheduler）。 */}
+        <SchedulerBar instance={name} />
         <div id="pywebio-scope-_groups">
           {/* 占位：老 UI 是 put_none()，对应 grid 的**第一列 0 宽**。
               #pywebio-scope-_groups 的 grid-template-columns 是

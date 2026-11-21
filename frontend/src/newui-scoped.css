@@ -1580,3 +1580,21 @@ html[data-alas-theme='dark_advanced_material'] #root #pywebio-scope-statistics-c
   margin: 0;
   flex: 0 0 auto;
 }
+
+/* ── 配置页顶部加调度器启停条（SchedulerBar）──────────────────────────
+   #pywebio-scope-content 在老 CSS 里是 display:flex（横向），_groups 靠
+   height:100% 撑满。多一个兄弟节点会把 _groups 挤歪，所以这里显式改成
+   纵向 flex：bar 自适应高度，_groups 吃掉剩余空间。 */
+#root #pywebio-scope-content.config-with-scheduler {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+#root #pywebio-scope-content.config-with-scheduler > #pywebio-scope-scheduler-bar {
+  flex: 0 0 auto;
+}
+#root #pywebio-scope-content.config-with-scheduler > #pywebio-scope-_groups {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}

@@ -62,9 +62,10 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
     _auto_search_fleet_index = 1
     auto_search_oil_limit_triggered = False
     auto_search_coin_limit_triggered = False
-    # 自律寻敌卡死自救：地图被渲染成小窗、图标显示运行中但舰队不动
+    # 自律寻敌卡死自救：地图被渲染成小窗、图标显示运行中但舰队不动。
+    # 三个条件同时满足才动手：画面像素连续不变（冻结）、业务无进展、超过计时。
     auto_search_stuck_timeout = 18       # 连“停止自律”都认不出来：18 秒就唤醒
-    auto_search_frozen_timeout = 30      # 显示运行中却一直没进展：30 秒兜底
+    auto_search_frozen_timeout = 30      # 显示运行中却画面冻结：30 秒兜底
     auto_search_stuck_max_attempt = 3
     _auto_search_stuck_timer = None
     _auto_search_frozen_timer = None
@@ -76,6 +77,9 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
         客户端偶发：地图被渲染成左上角小窗或画面完全冻结，
         此时任何已知 UI 都匹配不到，舰队也不动，
         原逻辑会一直空等到 device.stuck_record_check 的 195 秒超时。
+
+        画面还在变化（加载条、动画、特效）一律视为正常，绝不插手，
+        避免正常打关/切图被误判成卡死。
 
         实测有效的两种唤醒方式：
           1. 点击地图中央；
@@ -93,8 +97,16 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
             slow = Timer(self.auto_search_frozen_timeout).start()
             self._auto_search_frozen_timer = slow
 
-        # 认不出“停止自律”说明地图渲染已坏，等 18s 就动手；
-        # 还认得出来但长时间毫无进展，才等到 30s 兜底。
+        # 画面还在动就说明客户端活着：加载条、特效、地图动画都算进展，
+        # 正常打关时绝不会因为“久等”而插手。
+        signature = self._auto_search_frame_signature()
+        if signature is not None:
+            if signature != self.__dict__.get('_auto_search_frame_sig'):
+                self.__dict__['_auto_search_frame_sig'] = signature
+                self._auto_search_progress()
+                return False
+
+        # 画面确实冻住了才动手：认不出“停止自律”18s，还认得出来 30s。
         fast_ready = fast.reached() and not self.is_auto_search_running()
         slow_ready = slow.reached()
         if not fast_ready and not slow_ready:
@@ -120,6 +132,21 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
             self.device.click(AUTO_SEARCH_MAP_OPTION_ON, control_check=False)
         self.device.sleep(1)
         return True
+
+    def _auto_search_frame_signature(self):
+        """
+        Fingerprint the current screenshot to tell a frozen client from a slow one.
+
+        Returns:
+            int | None: None 表示拿不到画面（离线测试/截图失败），此时不做运动判定。
+        """
+        image = getattr(self.device, 'image', None)
+        if image is None:
+            return None
+        try:
+            return hash(image[::16, ::16].tobytes())
+        except Exception:
+            return None
 
     def _auto_search_progress(self, running=False):
         """

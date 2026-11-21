@@ -31,7 +31,8 @@ from module.ui.navbar import Navbar
 from module.ui.switch import Switch
 
 # 滑动参数
-SWIPE_DISTANCE = 250
+# 一张舰船卡约 145px 宽，250px 会一次跨过两艘，这里按「一次一艘」取值
+SWIPE_DISTANCE = 150
 SWIPE_RANDOM_RANGE = (-40, -20, 40, 20)
 # 装备中过滤器开关
 equipping_filter = Switch('Equiping_filter')
@@ -55,55 +56,86 @@ class Equipment(EquipmentCodeHandler):
         if equipping_filter.set('on' if enable else 'off', main=self):
             self.wait_until_stable(SWIPE_AREA)
 
-    def _ship_view_swipe(self, distance, check_button=EQUIPMENT_OPEN):
-        swipe_count = 0
-        swipe_timer = Timer(5, count=10)
+    def _ship_view_swipe(self, distance, check_button=EQUIPMENT_OPEN, max_same=2):
+        """
+        向左/右滑动切换舰船。
+
+        Args:
+            distance (int): 滑动距离，负值向左（下一艘）。
+            check_button (Button): 滑动结束后等这个按钮出现再判定画面。
+            max_same (int): 连续多少次滑动后画面仍未变化才判定「滑不动」。
+                舰船图鉴里存在大量同名同立绘的重复舰船，只看画面颜色会把
+                重复舰船误判成「没滑动」，因此画面没变时仍按「已切换」返回，
+                让上层试一次强化；连续超过 max_same 次都没变化（滑到底回弹）
+                才返回 False。
+
+        Returns:
+            bool: 是否成功切换到另一艘舰船。
+        """
         self.handle_info_bar()
         SWIPE_CHECK.load_color(self.device.image)
         SWIPE_CHECK._match_init = True  # Disable ensure_template() on match(), allows ship to be properly determined
         # whether actually different or not
+
+        # 逐艘强化时会连续滑动，同一个点击名累计到 device 的 12 次上限就会
+        # 抛 GameTooManyClickError（2026-11-22 00:41 实际撞过），这里提前清账。
+        # click_record 是 collections.deque（不是 dict），用 count 统计。
+        record = getattr(self.device, 'click_record', None)
+        if record is not None:
+            try:
+                same = record.count('SHIP_SWIPE')
+            except (AttributeError, TypeError):
+                same = 0
+            if same >= 8:
+                self.device.click_record_remove('SHIP_SWIPE')
+
+        self.device.swipe_vector(vector=(distance, 0), box=SWIPE_AREA.area, random_range=SWIPE_RANDOM_RANGE,
+                                 padding=0, duration=(0.1, 0.12), name='SHIP_SWIPE')
+        skip_first_screenshot = True
         while 1:
-            if not swipe_timer.started() or swipe_timer.reached():
-                swipe_timer.reset()
-                self.device.swipe_vector(vector=(distance, 0), box=SWIPE_AREA.area, random_range=SWIPE_RANDOM_RANGE,
-                                         padding=0, duration=(0.1, 0.12), name='SHIP_SWIPE')
-                # self.wait_until_appear(check_button, offset=(30, 30))
-                skip_first_screenshot = True
-                while 1:
-                    if skip_first_screenshot:
-                        skip_first_screenshot = False
-                    else:
-                        self.device.screenshot()
-                    if self.appear(check_button, offset=(30, 30)):
-                        break
-                    if self.appear(RETIRE_EQUIP_CONFIRM, offset=(30, 30)):
-                        logger.info('[装备-穿戴] 退役装备确认弹窗')
-                        return False
-                    # Popup when enhancing a NPC ship
-                    if self.handle_popup_confirm('SHIP_VIEW_SWIPE'):
-                        continue
-                swipe_count += 1
-
-            self.device.screenshot()
-
+            if skip_first_screenshot:
+                skip_first_screenshot = False
+            else:
+                self.device.screenshot()
+            if self.appear(check_button, offset=(30, 30)):
+                break
             if self.appear(RETIRE_EQUIP_CONFIRM, offset=(30, 30)):
                 logger.info('[装备-穿戴] 退役装备确认弹窗')
                 return False
-            if SWIPE_CHECK.match(self.device.image):
-                if swipe_count > 1:
-                    logger.info('[装备-穿戴] 多次滑动同一舰船')
-                    return False
+            # Popup when enhancing a NPC ship
+            if self.handle_popup_confirm('SHIP_VIEW_SWIPE'):
                 continue
 
-            if self.appear(check_button, offset=(30, 30)) and not SWIPE_CHECK.match(self.device.image):
-                logger.info('[装备-穿戴] 滑动检测到新舰船')
-                return True
+        self.device.screenshot()
 
-    def ship_view_next(self, check_button=EQUIPMENT_OPEN):
-        return self._ship_view_swipe(distance=-SWIPE_DISTANCE, check_button=check_button)
+        if self.appear(RETIRE_EQUIP_CONFIRM, offset=(30, 30)):
+            logger.info('[装备-穿戴] 退役装备确认弹窗')
+            return False
 
-    def ship_view_prev(self, check_button=EQUIPMENT_OPEN):
-        return self._ship_view_swipe(distance=SWIPE_DISTANCE, check_button=check_button)
+        if SWIPE_CHECK.match(self.device.image):
+            # 同名同立绘的重复舰船滑动后画面完全一样，不能直接判定「滑不动」。
+            # 这里按「已切换」返回，让上层先试一次强化；连续 max_same 次都这样
+            # 才认定真的到列表末尾（滑到底会回弹，画面一直不变）。
+            same = getattr(self, '_ship_swipe_same', 0) + 1
+            if same > max_same:
+                logger.info(f'[装备-穿戴] 连续 {same} 次滑动画面未变化，判定已到列表末尾')
+                self._ship_swipe_same = 0
+                return False
+            self._ship_swipe_same = same
+            logger.info(f'[装备-穿戴] 滑动后画面未变化（可能是重复舰船），按新舰船处理 {same}/{max_same}')
+            return True
+
+        self._ship_swipe_same = 0
+        if self.appear(check_button, offset=(30, 30)):
+            logger.info('[装备-穿戴] 滑动检测到新舰船')
+            return True
+        return False
+
+    def ship_view_next(self, check_button=EQUIPMENT_OPEN, max_same=2):
+        return self._ship_view_swipe(distance=-SWIPE_DISTANCE, check_button=check_button, max_same=max_same)
+
+    def ship_view_prev(self, check_button=EQUIPMENT_OPEN, max_same=2):
+        return self._ship_view_swipe(distance=SWIPE_DISTANCE, check_button=check_button, max_same=max_same)
 
     def ship_info_enter(self, click_button, check_button=EQUIPMENT_OPEN, long_click=True, skip_first_screenshot=True):
         enter_timer = Timer(10)
@@ -197,8 +229,8 @@ class Equipment(EquipmentCodeHandler):
             return True
         return False
 
-    def equip_view_next(self, check_button=EQUIPMENT_OPEN):
-        return self.ship_view_next(check_button=check_button)
+    def equip_view_next(self, check_button=EQUIPMENT_OPEN, max_same=2):
+        return self.ship_view_next(check_button=check_button, max_same=max_same)
 
     def equip_view_prev(self, check_button=EQUIPMENT_OPEN):
         return self.ship_view_prev(check_button=check_button)

@@ -505,8 +505,12 @@ class Enhancement(Dock):
         total = 0
         limit = self._retire_amount
 
+        # 筛选只在进入时做一次：船坞筛选是常驻状态，每强化一艘就重设一遍筛选
+        # 会反复点同一批按钮（「全部」/「前排先锋」识别摇摆），很快撞上点击保护。
+        entered = self._enhance_enter(favourite=favourite)
+
         while total < limit:
-            if not self._enhance_enter(favourite=favourite):
+            if not entered:
                 logger.info('[退役-强化] 船坞中已无可强化舰船')
                 break
 
@@ -515,11 +519,17 @@ class Enhancement(Dock):
             self.ui_back(DOCK_CHECK)
 
             if not choose_result:
+                # 可能是筛选被重置或真的没船了，重设一次筛选再确认
+                entered = self._enhance_enter(favourite=favourite)
+                if not entered:
+                    logger.info('[退役-强化] 无可强化舰船（已排除白船）')
+                    break
                 logger.info('[退役-强化] 首个舰船强化失败（无材料或不可强化），结束本轮强化')
                 break
 
             total += 1
             logger.info(f'[退役-强化] 累计强化 {total} 艘')
+            entered = True
 
         self._enhance_quit()
         return total

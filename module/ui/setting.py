@@ -142,6 +142,12 @@ class Setting:
         skip_first_screenshot = True
         retry = Timer(1, count=2)
         timeout = Timer(10, count=20).start()
+        # 同一组按钮反复点击说明状态识别在摇摆（例如「全部」与「前排先锋」互相误判），
+        # 继续点只会撞上 device 的点击保护，这里主动放弃。
+        last_clicks = None
+        repeat = 0
+        click_total = 0
+        click_limit = 8
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
@@ -155,10 +161,25 @@ class Setting:
             self.show_active_buttons()
             clicks = self.get_buttons_to_click(status)
             if clicks:
+                names = [button.name for button in clicks]
+                if names == last_clicks:
+                    repeat += 1
+                    if repeat >= 3:
+                        logger.warning(f'[UI] 设置 {self.name} 反复点击 {names} 仍未生效，放弃')
+                        return False
+                else:
+                    last_clicks = names
+                    repeat = 0
+
                 if retry.reached():
                     for button in clicks:
                         self.main.device.click(button)
+                        click_total += 1
                     retry.reset()
+
+                    if click_total >= click_limit:
+                        logger.warning(f'[UI] 设置 {self.name} 点击 {click_total} 次仍未生效，放弃')
+                        return False
             else:
                 return True
 

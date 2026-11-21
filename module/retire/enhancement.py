@@ -9,8 +9,6 @@
 可回退到退役流程。
 """
 
-from random import choice
-
 import cv2
 
 import module.config.server as server
@@ -25,6 +23,12 @@ from module.retire.dock import Dock
 from module.ui.assets import BACK_ARROW
 
 VALID_SHIP_TYPES = ['dd', 'ss', 'cl', 'ca', 'bb', 'cv', 'repair', 'others']
+
+# 自动强化的筛选条件（白船 N 不参与强化）：
+#   稀有度 = 稀有 / 精锐 / 超稀有 / 海上传奇
+#   附加索引 = 可强化
+#   排序 = 等级（升序），索引与阵营不限
+ENHANCE_RARITY_TARGETS = ['rare', 'elite', 'super_rare', 'ultra']
 if server.server != 'jp':
     OCR_DOCK_AMOUNT = DigitCounter(
         DOCK_AMOUNT, letter=(255, 255, 255), threshold=192)
@@ -64,8 +68,13 @@ class Enhancement(Dock):
             return ''
         return self.config.cross_get('GemsFarming.GemsFarming.CommonCV', default='any')
 
-    def _enhance_enter(self, favourite=False, ship_type=None):
+    def _enhance_enter(self, favourite=False):
         """
+        应用强化筛选条件并进入列表第一个舰船。
+
+        筛选固定为：稀有度 R/SR/SSR/UR + 附加索引「可强化」，按等级升序，
+        索引/阵营不限（白船 N 被排除在稀有度之外）。
+
         Pages:
             in: page_dock
             out: page_ship_enhance
@@ -79,11 +88,13 @@ class Enhancement(Dock):
         if favourite:
             self.dock_favourite_set(enable=True, wait_loading=False)
 
-        if ship_type is not None:
-            ship_type = str(ship_type)
-            self.dock_filter_set(extra='enhanceable', index=ship_type)
-        else:
-            self.dock_filter_set(extra='enhanceable')
+        self.dock_filter_set(
+            sort='level',
+            index='all',
+            faction='all',
+            rarity=list(ENHANCE_RARITY_TARGETS),
+            extra='enhanceable',
+        )
 
         if self.appear(DOCK_EMPTY, offset=(30, 30)):
             return False
@@ -462,11 +473,12 @@ class Enhancement(Dock):
 
     def enhance_ships(self, favourite=None):
         """
-        Enhance target ships by specified order
-        of types listed in ENHANCE_ORDER_STRING
+        逐艘强化：每次都点筛选结果里的第一艘舰船，强化完成后返回列表，
+        再点新的第一个，直到无可强化舰船或达到数量上限。
 
-        Invalid types are treated as requesting
-        from AzurPilot to choose a valid one at random
+        筛选条件见 ENHANCE_RARITY_TARGETS（R/SR/SSR/UR + 可强化，按等级升序），
+        因此刚强化完仍可继续强化的舰船会留在第一位继续被强化，
+        直到它不再满足「可强化」为止。
 
         Pages:
             in: page_dock
@@ -481,57 +493,25 @@ class Enhancement(Dock):
         if favourite is None:
             favourite = self.config.Enhance_ShipToEnhance == 'favourite'
 
-        logger.hr('按类型强化')
+        logger.hr('逐个强化')
         total = 0
+        limit = self._retire_amount
 
-        # Process ENHANCE_ORDER_STRING if any into ship_types
-        if self.config.Enhance_Filter is not None:
-            ship_types = [s.strip().lower()
-                          for s in self.config.Enhance_Filter.split('>')]
-            ship_types = list(filter(''.__ne__, ship_types))
-            if len(ship_types) == 0:
-                ship_types = [None]
-        else:
-            ship_types = [None]
-        logger.attr('强化顺序', ship_types)
+        while total < limit:
+            if not self._enhance_enter(favourite=favourite):
+                logger.info('[退役-强化] 船坞中已无可强化舰船')
+                break
 
-        # Process available ship types for choice randomization
-        # Removing types that have already been specified by
-        # ENHANCE_ORDER_STRING
-        available_ship_types = VALID_SHIP_TYPES.copy()
-        [available_ship_types.remove(s)
-         for s in ship_types if s in available_ship_types]
-
-        for ship_type in ship_types:
-            # None check, do not execute if is None
-            # Otherwise, select a type at random since
-            # user has specified an unrecognized type
-            if ship_type is not None and ship_type not in VALID_SHIP_TYPES:
-                if len(available_ship_types) == 0:
-                    logger.info(
-                        '[退役-强化] 无可选舰船类型，跳过本次迭代')
-                    continue
-                ship_type = choice(available_ship_types)
-                available_ship_types.remove(ship_type)
-
-            logger.info(f'收藏={favourite}, 舰船类型={ship_type}')
-
-            # Continue if at least 1 CARD_GRID is selectable
-            # otherwise skip to next ship type
-            if not self._enhance_enter(favourite=favourite, ship_type=ship_type):
-                logger.hr(f'[退役-强化] 船坞为空，舰船类型: {ship_type}')
-                continue
-
-            current_count = self.config.Enhance_CheckPerCategory
-            while 1:
-                choose_result, current_count = self._enhance_choose(
-                    ship_count=current_count)
-                if not choose_result:
-                    break
-                total += 10
-                if total >= self._retire_amount:
-                    break
+            # 单艘只做一轮强化，成功后回到列表重新取第一个
+            choose_result, _ = self._enhance_choose(ship_count=1)
             self.ui_back(DOCK_CHECK)
+
+            if not choose_result:
+                logger.info('[退役-强化] 首个舰船强化失败（无材料或不可强化），结束本轮强化')
+                break
+
+            total += 1
+            logger.info(f'[退役-强化] 累计强化 {total} 艘')
 
         self._enhance_quit()
         return total

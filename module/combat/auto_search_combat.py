@@ -64,7 +64,7 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
     auto_search_coin_limit_triggered = False
     # 自律寻敌卡死自救：地图被渲染成小窗、图标显示运行中但舰队不动
     auto_search_stuck_timeout = 18       # 连“停止自律”都认不出来：18 秒就唤醒
-    auto_search_frozen_timeout = 90      # 显示运行中却一直没进展：90 秒兜底
+    auto_search_frozen_timeout = 30      # 显示运行中却一直没进展：30 秒兜底
     auto_search_stuck_max_attempt = 3
     _auto_search_stuck_timer = None
     _auto_search_frozen_timer = None
@@ -94,8 +94,10 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
             self._auto_search_frozen_timer = slow
 
         # 认不出“停止自律”说明地图渲染已坏，等 18s 就动手；
-        # 还认得出来但长时间毫无进展，才等到 90s 兜底。
-        if not (fast.reached() and not self.is_auto_search_running()) and not slow.reached():
+        # 还认得出来但长时间毫无进展，才等到 30s 兜底。
+        fast_ready = fast.reached() and not self.is_auto_search_running()
+        slow_ready = slow.reached()
+        if not fast_ready and not slow_ready:
             return False
 
         attempt = self.__dict__.get('_auto_search_stuck_attempt', 0) + 1
@@ -107,13 +109,14 @@ class AutoSearchCombat(AutoSearchRecovery, MapOperation, Combat, CampaignStatus)
             logger.warning('[自动搜索-移动] 多次唤醒无效，交给恢复流程')
             raise GameStuckError('自动搜索画面无响应')
 
-        if attempt == 1:
-            logger.warning(f'[自动搜索-移动] {self.auto_search_stuck_timeout}s 无进展，点击地图中央唤醒')
+        if fast_ready and attempt == 1:
+            logger.warning(f'[自动搜索-移动] {self.auto_search_stuck_timeout}s 无进展且认不出自律寻敌，点击地图中央唤醒')
             self.device.click(AUTO_SEARCH_MAP_CENTER, control_check=False)
         else:
-            # 单次点击即可：显示运行中会被点成关闭，脚本随后自己会再开；
-            # 显示未运行则直接被点开。连点两下会互相抵消。
-            logger.warning(f'[自动搜索-移动] 第 {attempt} 次唤醒：切换自律寻敌状态')
+            # 画面仍显示运行中时点地图中央实测无效，直接翻自律寻敌开关；
+            # 单次点击即可：运行中会被点成关闭，脚本随后自己会再开。
+            timeout = self.auto_search_stuck_timeout if fast_ready else self.auto_search_frozen_timeout
+            logger.warning(f'[自动搜索-移动] {timeout}s 无进展（第 {attempt} 次唤醒），切换自律寻敌状态')
             self.device.click(AUTO_SEARCH_MAP_OPTION_ON, control_check=False)
         self.device.sleep(1)
         return True

@@ -45,11 +45,6 @@ class Enhancement(Dock):
     Attributes:
         _retire_amount (property): 根据退役模式配置计算的退役数量上限。
     """
-    # 图鉴里有大量同名同立绘的重复舰船，滑动后画面可能完全一样。
-    # 这里允许连续这么多次「画面没变」才判定滑到列表末尾，避免一遇到
-    # 重复舰船就结束本轮强化。
-    enhance_swipe_max_same = 6
-
     @property
     def _retire_amount(self):
         if self.config.Retirement_RetireMode == 'one_click_retire':
@@ -455,7 +450,7 @@ class Enhancement(Dock):
                 return "state_enhance_confirm"
 
             # Try to swipe to next
-            if self.equip_view_next(check_button=ENHANCE_RECOMMEND, max_same=self.enhance_swipe_max_same):
+            if self.equip_view_next(check_button=ENHANCE_RECOMMEND):
                 if not need_to_skip:
                     nonlocal ship_count
                     ship_count -= 1

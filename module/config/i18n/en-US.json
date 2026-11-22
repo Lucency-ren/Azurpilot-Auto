@@ -1148,6 +1148,10 @@
       "all": "Strengthen all ships",
       "favourite": "Only commonly used ships are strengthened"
     },
+    "Count": {
+      "name": "Enhance Count",
+      "help": "Max ships to enhance per cycle, 0 = until nothing can be enhanced"
+    },
     "Sort": {
       "name": "Sort",
       "help": "Same as the dock filter panel sort.",
@@ -1193,18 +1197,29 @@
       "tempesta": "Tempesta",
       "other": "Other"
     },
-    "Rarity": {
-      "name": "Rarity",
-      "help": "Same as the dock filter panel rarity. Multiple choices allowed.\nOrdinary ships are skipped unless Common is selected.",
-      "common": "Common",
-      "rare": "Rare",
-      "elite": "Elite",
-      "super_rare": "Super Rare",
-      "ultra": "Ultra Rare"
+    "RarityCommon": {
+      "name": "Enhance Common ( N )",
+      "help": "Dock filter rarity; off by default so white ships stay untouched"
+    },
+    "RarityRare": {
+      "name": "Enhance Rare ( R )",
+      "help": "Dock filter rarity"
+    },
+    "RarityElite": {
+      "name": "Enhance Elite ( SR )",
+      "help": "Dock filter rarity"
+    },
+    "RaritySuperRare": {
+      "name": "Enhance Super Rare ( SSR )",
+      "help": "Dock filter rarity"
+    },
+    "RarityUltra": {
+      "name": "Enhance Ultra Rare ( UR )",
+      "help": "Dock filter rarity"
     },
     "ExtraIndex": {
       "name": "Extra index",
-      "help": "Same as the dock filter panel extra index. Multiple choices allowed.\nDefaults to Enhanceable.",
+      "help": "Dock filter extra index, single choice only; defaults to Enhanceable",
       "no_limit": "No limit",
       "has_skin": "Has skin",
       "can_retrofit": "Can retrofit",

@@ -394,6 +394,10 @@ Enhance:
   ShipToEnhance:
     value: all
     option: [all, favourite]
+  # 每轮最多强化多少艘（0 = 一直强化到没有可强化舰船为止）
+  Count:
+    value: 0
+    validate: [0, 3000]
   Sort:
     value: level
     option: [rarity, level, total, join, intimacy, mood, stat]
@@ -403,13 +407,16 @@ Enhance:
   Faction:
     value: all
     option: [all, eagle, royal, sakura, iron, dragon, sardegna, northern, iris, vichya, tulipa, pedreria, meta, tempesta, other]
-  Rarity:
-    type: multiselect
-    value: [rare, elite, super_rare, ultra]
-    option: [common, rare, elite, super_rare, ultra]
+  # 稀有度拆成五个开关（与「传统退役设置」的 退役白皮（N）/蓝皮（R）… 同款交互），
+  # 每个都能单独开/关，白船默认关闭。
+  RarityCommon: false
+  RarityRare: true
+  RarityElite: true
+  RaritySuperRare: true
+  RarityUltra: true
+  # 附加索引只能单选：与「排序/索引/阵营」一样是普通下拉。
   ExtraIndex:
-    type: multiselect
-    value: [enhanceable]
+    value: enhanceable
     option: [no_limit, has_skin, can_retrofit, enhanceable, can_limit_break, not_level_max, can_awaken, can_awaken_plus, special, oath_skin, unique_augment_module, wear_skin, oathed]
 OldRetire:
   N: true

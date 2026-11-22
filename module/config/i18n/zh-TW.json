@@ -1148,6 +1148,10 @@
       "all": "強化全部艦船",
       "favourite": "僅強化常用艦船"
     },
+    "Count": {
+      "name": "Enhance.Count.name",
+      "help": "Enhance.Count.help"
+    },
     "Sort": {
       "name": "Enhance.Sort.name",
       "help": "Enhance.Sort.help",
@@ -1193,14 +1197,25 @@
       "tempesta": "tempesta",
       "other": "other"
     },
-    "Rarity": {
-      "name": "Enhance.Rarity.name",
-      "help": "Enhance.Rarity.help",
-      "common": "common",
-      "rare": "rare",
-      "elite": "elite",
-      "super_rare": "super_rare",
-      "ultra": "ultra"
+    "RarityCommon": {
+      "name": "Enhance.RarityCommon.name",
+      "help": "Enhance.RarityCommon.help"
+    },
+    "RarityRare": {
+      "name": "Enhance.RarityRare.name",
+      "help": "Enhance.RarityRare.help"
+    },
+    "RarityElite": {
+      "name": "Enhance.RarityElite.name",
+      "help": "Enhance.RarityElite.help"
+    },
+    "RaritySuperRare": {
+      "name": "Enhance.RaritySuperRare.name",
+      "help": "Enhance.RaritySuperRare.help"
+    },
+    "RarityUltra": {
+      "name": "Enhance.RarityUltra.name",
+      "help": "Enhance.RarityUltra.help"
     },
     "ExtraIndex": {
       "name": "Enhance.ExtraIndex.name",

@@ -195,11 +195,16 @@ class GeneratedConfig:
 
     # 配置组 `Enhance`
     Enhance_ShipToEnhance = 'all'  # all, favourite
+    Enhance_Count = 0
     Enhance_Sort = 'level'  # rarity, level, total, join, intimacy, mood, stat
     Enhance_Index = 'all'  # all, vanguard, main, dd, cl, ca, bb, cv, repair, ss, others
     Enhance_Faction = 'all'  # all, eagle, royal, sakura, iron, dragon, sardegna, northern, iris, vichya, tulipa, pedreria, meta, tempesta, other
-    Enhance_Rarity = ['rare', 'elite', 'super_rare', 'ultra']  # common, rare, elite, super_rare, ultra
-    Enhance_ExtraIndex = ['enhanceable']  # no_limit, has_skin, can_retrofit, enhanceable, can_limit_break, not_level_max, can_awaken, can_awaken_plus, special, oath_skin, unique_augment_module, wear_skin, oathed
+    Enhance_RarityCommon = False
+    Enhance_RarityRare = True
+    Enhance_RarityElite = True
+    Enhance_RaritySuperRare = True
+    Enhance_RarityUltra = True
+    Enhance_ExtraIndex = 'enhanceable'  # no_limit, has_skin, can_retrofit, enhanceable, can_limit_break, not_level_max, can_awaken, can_awaken_plus, special, oath_skin, unique_augment_module, wear_skin, oathed
 
     # 配置组 `OldRetire`
     OldRetire_N = True

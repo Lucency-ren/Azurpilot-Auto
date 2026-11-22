@@ -1009,6 +1009,14 @@
           "favourite"
         ]
       },
+      "Count": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          3000
+        ]
+      },
       "Sort": {
         "type": "select",
         "value": "level",
@@ -1060,27 +1068,29 @@
           "other"
         ]
       },
-      "Rarity": {
-        "type": "multiselect",
-        "value": [
-          "rare",
-          "elite",
-          "super_rare",
-          "ultra"
-        ],
-        "option": [
-          "common",
-          "rare",
-          "elite",
-          "super_rare",
-          "ultra"
-        ]
+      "RarityCommon": {
+        "type": "checkbox",
+        "value": false
+      },
+      "RarityRare": {
+        "type": "checkbox",
+        "value": true
+      },
+      "RarityElite": {
+        "type": "checkbox",
+        "value": true
+      },
+      "RaritySuperRare": {
+        "type": "checkbox",
+        "value": true
+      },
+      "RarityUltra": {
+        "type": "checkbox",
+        "value": true
       },
       "ExtraIndex": {
-        "type": "multiselect",
-        "value": [
-          "enhanceable"
-        ],
+        "type": "select",
+        "value": "enhanceable",
         "option": [
           "no_limit",
           "has_skin",

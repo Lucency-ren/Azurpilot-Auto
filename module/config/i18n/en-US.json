@@ -437,10 +437,6 @@
     "MeowfficerScore": {
       "name": "Meowfficer Score",
       "help": "Read meowfficer talents and score them with public guide rules"
-    },
-    "SemiAutoEnhance": {
-      "name": "Semi-auto Enhance",
-      "help": "Enhance ships one by one using the Enhance settings, without retiring"
     }
   },
   "Scheduler": {
@@ -1152,10 +1148,6 @@
       "all": "Strengthen all ships",
       "favourite": "Only commonly used ships are strengthened"
     },
-    "Count": {
-      "name": "Enhance Count",
-      "help": "Max ships to enhance per cycle, 0 = until nothing can be enhanced"
-    },
     "Sort": {
       "name": "Sort",
       "help": "Same as the dock filter panel sort.",
@@ -1201,29 +1193,18 @@
       "tempesta": "Tempesta",
       "other": "Other"
     },
-    "RarityCommon": {
-      "name": "Enhance Common ( N )",
-      "help": "Dock filter rarity; off by default so white ships stay untouched"
-    },
-    "RarityRare": {
-      "name": "Enhance Rare ( R )",
-      "help": "Dock filter rarity"
-    },
-    "RarityElite": {
-      "name": "Enhance Elite ( SR )",
-      "help": "Dock filter rarity"
-    },
-    "RaritySuperRare": {
-      "name": "Enhance Super Rare ( SSR )",
-      "help": "Dock filter rarity"
-    },
-    "RarityUltra": {
-      "name": "Enhance Ultra Rare ( UR )",
-      "help": "Dock filter rarity"
+    "Rarity": {
+      "name": "Rarity",
+      "help": "Same as the dock filter panel rarity. Multiple choices allowed.\nOrdinary ships are skipped unless Common is selected.",
+      "common": "Common",
+      "rare": "Rare",
+      "elite": "Elite",
+      "super_rare": "Super Rare",
+      "ultra": "Ultra Rare"
     },
     "ExtraIndex": {
       "name": "Extra index",
-      "help": "Dock filter extra index, single choice only; defaults to Enhanceable",
+      "help": "Same as the dock filter panel extra index. Multiple choices allowed.\nDefaults to Enhanceable.",
       "no_limit": "No limit",
       "has_skin": "Has skin",
       "can_retrofit": "Can retrofit",
@@ -7351,16 +7332,6 @@
     "ScanPasses": {
       "name": "Max list pages",
       "help": "How many pages of the cattery list to walk in scan-all mode (12 cats per page); stops early at the end of the list"
-    }
-  },
-  "SemiAutoEnhance": {
-    "_info": {
-      "name": "Semi-auto Enhance",
-      "help": "Enhance ships in dock one by one using the Enhance settings, without retiring."
-    },
-    "Count": {
-      "name": "Enhance count",
-      "help": "Max ships to enhance this run, 0 = follow Enhance settings."
     }
   },
   "Storage": {

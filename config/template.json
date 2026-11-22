@@ -190,16 +190,18 @@
     },
     "Enhance": {
       "ShipToEnhance": "all",
-      "Count": 0,
       "Sort": "level",
       "Index": "all",
       "Faction": "all",
-      "RarityCommon": false,
-      "RarityRare": true,
-      "RarityElite": true,
-      "RaritySuperRare": true,
-      "RarityUltra": true,
-      "ExtraIndex": "enhanceable"
+      "Rarity": [
+        "rare",
+        "elite",
+        "super_rare",
+        "ultra"
+      ],
+      "ExtraIndex": [
+        "enhanceable"
+      ]
     },
     "OldRetire": {
       "N": true,
